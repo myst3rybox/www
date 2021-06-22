@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Collections</title>
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+    <!-- Jquery -->
+    <script src="./js/jquery.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <!-- Bootstrap js -->
+    <script src="./js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+    <!-- Web3 -->
+    <script src="./js/web3.min.js"></script>
+    <script>
+      let account = "";
+      var MysteryBox, Collections;
+      $(document).ready(function(){
+        // 初始化web3
+        initWeb3();
+        // 初始化合约接口
+        initAbi();
+        // page init
+        initPage();
+        $("button#submitBtn").click(function(){
+            let contruct_address = $("#contracts").val();
+            let ids = $("#ids").val();
+            SubmitCollection(contruct_address, JSON.parse(ids));
+        });
+        $("#contracts").on("change",function () {
+            $("select option:selected").each(function () {
+                if ("Yolo Boy" == $(this).text()) {
+                    $("#Cosmic").hide();
+                    $("#Yolo").show();
+                } else {
+                    $("#Yolo").hide();
+                    $("#Cosmic").show();
+                }
+            })
+        });
+        $(".enableEthereumButton").click(function() {
+          ethereum.request({ method: 'eth_requestAccounts' });
+        });
+      });
+      async function initWeb3() {
+            if (window.ethereum) {
+                window.web3 = new Web3(ethereum);
+                try {
+                    await ethereum.enable();
+                    account = ethereum.selectedAddress;
+                    //alert(account);
+                    return true
+                } catch (error) {
+                    console.log(error)
+                    return false
+                }
+            }
+            else if (window.web3) {
+                window.web3 = new Web3(web3.currentProvider);
+                return true
+            }
+            else {
+                $(".metamask-wrap").show()
+                return false
+            }
+        }
+      async function initAbi() {
+        collections = await $.getJSON('./build/contracts/ETH/Collections.json');
+        mysterybox = await $.getJSON('./build/contracts/ETH/MysteryBox.json');
+        // box
+        MysteryBox = new web3.eth.Contract(mysterybox.abi, "0xad9d7698082f48209785dD76A1f2AAab4e397408");
+        // Collections
+        Collections = new web3.eth.Contract(collections.abi, "0xad9d7698082f48209785dD76A1f2AAab4e397408");
+        // Get collecton info
+        let counts = await Collections.methods.getWinnerCounts().call();
+        console.log(counts);
+        for (let index = 0; index < counts; index++) {
+            let info = await Collections.methods.getWinnerInfo(index).call();
+            console.log(info);
+            console.log("winner_address", info.winner_address);
+            console.log("box_contract", info.box_contract);
+            for (let j = 0; j < info.box_ids.length; j++) {
+                console.log("box_index", info.box_ids[j]);
+            }
+            winner = document.createElement("p");
+            winner.innerHTML = index+1 + ": " + info.winner_address
+            box = document.createElement("p");
+            box.innerHTML = info.box_contract;
+            ids = document.createElement("p");
+            ids.innerHTML = info.box_ids;
+            $("#winner").append(winner, box, ids);
+        }
+      }
+      async function initPage() {
+            $("#Yolo").empty();
+            $("#Cosmic").empty();
+            for (let i = 0; i < 12; i++) {
+                yolo = document.createElement("div");
+                yolo.innerHTML = '<div class="col-sm-1 col-md-2">'
+                                    +'<div class="thumbnail">'
+                                        + '<img src="./images/YoloBoy/'+i+'.png" alt="...">'
+                                    + '</div>'
+                                    + '</div>';
+                $("#Yolo").append(yolo);
+                cosmic = document.createElement("div");
+                cosmic.innerHTML = '<div class="col-sm-1 col-md-2">'
+                                        +'<div class="thumbnail">'
+                                        + '<img src="./images/CosmicBoy/'+i+'.png" alt="...">'
+                                    + '</div>'
+                                    + '</div>';
+                $("#Cosmic").append(cosmic);
+            }
+            $("#Yolo").hide();
+      }
+      async function SubmitCollection(contract_address, ids) {
+        $(".debug#msg").text("Save Hash...");
+        await Collections.methods.Merge(contract_address, ids).send({from:account});
+        location.reload();
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="container">
+      <h1>WINNNER</h1>
+      <div id="winner"></div>
+      <h1>MysteryBox Collections</h1>
+      <select id="contracts">
+        <option value ="0xd5D058c8F2833Ad7c24337E67B557a563E451359">Cosmic Boy</option>
+        <option value ="0x1504481F4525d42130598510E4a8471Eb0457937">Yolo Boy</option>
+      </select>
+      <div class="row" id="Cosmic">
+      </div>
+      <div class="row" id="Yolo">
+      </div>
+      <h1>Mysterybox merge</h1>
+      <p>Input your mysterybox id array, such as: [1,8,23,44,21,67,56,12,15,45,88,89], total is 12.</p>
+      <input id="ids" placeholder="Mystery Box IDs">
+      <button type="button" class="btn btn-primary" id="submitBtn">Merge</button>
+    </div>
+  </body>
+</html>
