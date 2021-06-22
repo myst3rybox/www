@@ -71,25 +71,31 @@
         // box
         MysteryBox = new web3.eth.Contract(mysterybox.abi, "0xad9d7698082f48209785dD76A1f2AAab4e397408");
         // Collections
-        Collections = new web3.eth.Contract(collections.abi, "0xad9d7698082f48209785dD76A1f2AAab4e397408");
+        Collections = new web3.eth.Contract(collections.abi, "0x4959B7cdC8dceC19116a82335465f4085C408750"); // kovan
         // Get collecton info
         let counts = await Collections.methods.getWinnerCounts().call();
         console.log(counts);
-        for (let index = 0; index < counts; index++) {
-            let info = await Collections.methods.getWinnerInfo(index).call();
-            console.log(info);
-            console.log("winner_address", info.winner_address);
-            console.log("box_contract", info.box_contract);
-            for (let j = 0; j < info.box_ids.length; j++) {
-                console.log("box_index", info.box_ids[j]);
+        if (0 == counts) {
+            none = document.createElement("p");
+            none.innerHTML = "No Winner here.";
+            $("#winner").append(none);
+        } else {
+            for (let index = 0; index < counts; index++) {
+                let info = await Collections.methods.getWinnerInfo(index).call();
+                console.log(info);
+                console.log("winner_address", info.winner_address);
+                console.log("box_contract", info.box_contract);
+                for (let j = 0; j < info.box_ids.length; j++) {
+                    console.log("box_index", info.box_ids[j]);
+                }
+                winner = document.createElement("p");
+                winner.innerHTML = index+1 + ": " + info.winner_address
+                box = document.createElement("p");
+                box.innerHTML = info.box_contract;
+                ids = document.createElement("p");
+                ids.innerHTML = info.box_ids;
+                $("#winner").append(winner, box, ids);
             }
-            winner = document.createElement("p");
-            winner.innerHTML = index+1 + ": " + info.winner_address
-            box = document.createElement("p");
-            box.innerHTML = info.box_contract;
-            ids = document.createElement("p");
-            ids.innerHTML = info.box_ids;
-            $("#winner").append(winner, box, ids);
         }
       }
       async function initPage() {
